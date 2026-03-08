@@ -1,0 +1,41 @@
+{% extends 'clothstore/base.html' %}
+
+{% block title %}ClothStore | Order Success{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="card">
+        <span class="badge">Order placed</span>
+        <h1>Thank you, {{ order.customer_name }}!</h1>
+        <p class="muted">Your learning checkout flow is complete. This page shows how data saved during checkout can be displayed back to the customer.</p>
+    </div>
+</section>
+
+<section class="two-column">
+    <div class="card">
+        <h2>Order details</h2>
+        <p><strong>Reference:</strong> {{ order.reference_code }}</p>
+        <p><strong>Email:</strong> {{ order.customer_email }}</p>
+        <p><strong>Phone:</strong> {{ order.phone|default:'Not provided' }}</p>
+        <p><strong>City:</strong> {{ order.city }}</p>
+        <p><strong>Address:</strong> {{ order.address }}</p>
+        <p><strong>Notes:</strong> {{ order.notes|default:'No notes added' }}</p>
+        <p><strong>Status:</strong> {{ order.get_status_display }}</p>
+    </div>
+
+    <div class="card">
+        <h2>Purchased items</h2>
+        <ul class="order-list">
+            {% for item in order.items.all %}
+                <li>
+                    <strong>{{ item.product.name }}</strong><br>
+                    <span class="small-text">{{ item.quantity }} × ${{ item.price_at_purchase }} = ${{ item.line_total }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+        <hr style="margin: 1rem 0; border: 0; border-top: 1px solid #e5e7eb;">
+        <p class="price">Total: ${{ order.total_amount }}</p>
+        <a href="{% url 'clothstore:order_lookup' %}" class="button secondary">Track orders by email</a>
+    </div>
+</section>
+{% endblock %}

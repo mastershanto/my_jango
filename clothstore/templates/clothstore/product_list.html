@@ -1,0 +1,76 @@
+{% extends 'clothstore/base.html' %}
+
+{% block title %}ClothStore | Products{% endblock %}
+
+{% block content %}
+<section class="layout">
+    <aside class="sidebar card">
+        <h2>Categories</h2>
+        <ul>
+            <li>
+                <a href="{% url 'clothstore:product_list' %}"><strong>All Products</strong></a>
+            </li>
+            {% for category in categories %}
+                <li>
+                    <a href="{% url 'clothstore:category_products' category.slug %}">
+                        {{ category.name }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </aside>
+
+    <section>
+        <div class="card" style="margin-bottom: 1rem;">
+            <form method="get" class="search-bar" style="margin-bottom: 1rem;">
+                <input type="search" name="q" value="{{ query }}" placeholder="Search products by name">
+                <button class="button" type="submit">Search</button>
+            </form>
+            <h1 style="margin-top: 0;">
+                {% if selected_category %}
+                    {{ selected_category.name }}
+                {% else %}
+                    All Products
+                {% endif %}
+            </h1>
+            <p class="muted">
+                {% if selected_category %}
+                    {{ selected_category.description }}
+                {% else %}
+                    Browse all cloth items in this beginner-friendly store.
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="grid product-grid">
+            {% for product in products %}
+                <div class="card">
+                    <span class="badge">{{ product.category.name }}</span>
+                    <h3>{{ product.name }}</h3>
+                    <p class="muted">{{ product.short_description }}</p>
+                    <p class="muted">Fabric: {{ product.fabric }}</p>
+                    <p class="price">${{ product.price }}</p>
+                    <p class="{% if product.stock > 5 %}stock-ok{% elif product.stock > 0 %}stock-low{% else %}muted{% endif %}">
+                        {{ product.stock_label }}
+                    </p>
+                    <div>
+                        <a class="button" href="{{ product.get_absolute_url }}">Open Product</a>
+                        {% if product.is_in_stock %}
+                            <form action="{% url 'clothstore:cart_add' product.id %}" method="post" style="display: inline-block;">
+                                {% csrf_token %}
+                                <input type="hidden" name="quantity" value="1">
+                                <input type="hidden" name="next" value="{% url 'clothstore:product_list' %}">
+                                <button class="button secondary" type="submit">Add to Cart</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="card">
+                    <p>No products found in this category.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+</section>
+{% endblock %}

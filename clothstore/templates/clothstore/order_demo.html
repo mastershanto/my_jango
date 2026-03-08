@@ -1,0 +1,56 @@
+{% extends 'clothstore/base.html' %}
+
+{% block title %}ClothStore | Order Demo{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="card">
+        <h1>Order relationship demo</h1>
+        <p class="muted">
+            This page shows how `Order` connects to many `OrderItem` rows, and each `OrderItem`
+            connects to one `Product`.
+        </p>
+        <ul class="check-list">
+            <li>`Order` stores customer checkout information.</li>
+            <li>`OrderItem` stores each purchased product and quantity.</li>
+            <li>`Product` stock can be reduced after checkout.</li>
+        </ul>
+    </div>
+</section>
+
+{% if demo_order %}
+    <section class="product-detail">
+        <div class="card">
+            <h2>Customer details</h2>
+            <p><strong>Name:</strong> {{ demo_order.customer_name }}</p>
+            <p><strong>Email:</strong> {{ demo_order.customer_email }}</p>
+            <p><strong>Phone:</strong> {{ demo_order.phone|default:'Not provided' }}</p>
+            <p><strong>City:</strong> {{ demo_order.city }}</p>
+            <p><strong>Address:</strong> {{ demo_order.address }}</p>
+            <p><strong>Reference:</strong> {{ demo_order.reference_code }}</p>
+            <p><strong>Status:</strong> {{ demo_order.get_status_display }}</p>
+            <p><strong>Notes:</strong> {{ demo_order.notes|default:'No notes' }}</p>
+        </div>
+
+        <div class="card">
+            <h2>Order items</h2>
+            <ul class="order-list">
+                {% for item in demo_order.items.all %}
+                    <li>
+                        <strong>{{ item.product.name }}</strong><br>
+                        <span class="muted">{{ item.quantity }} × ${{ item.price_at_purchase }} = ${{ item.line_total }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+            <hr style="margin: 1rem 0; border: 0; border-top: 1px solid #e5e7eb;">
+            <p class="price">Total: ${{ demo_order.total_amount }}</p>
+        </div>
+    </section>
+{% else %}
+    <section class="section">
+        <div class="card">
+            <p>No demo order is available yet. Create one from the admin panel.</p>
+        </div>
+    </section>
+{% endif %}
+{% endblock %}

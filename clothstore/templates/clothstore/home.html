@@ -1,0 +1,142 @@
+{% extends 'clothstore/base.html' %}
+
+{% block title %}ClothStore | Home{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-card">
+        <span class="badge">Simple Django Ecommerce</span>
+        <h1>Learn Django by building a cloth store.</h1>
+        <p>
+            This small project shows the main Django ideas in one place: models for data,
+            views for logic, URLs for routing, templates for UI, sessions for cart storage,
+            forms for checkout, and admin for managing products.
+        </p>
+        <a class="button" href="{% url 'clothstore:product_list' %}">Browse Products</a>
+        <a class="button secondary" href="{% url 'clothstore:cart_detail' %}">Open Cart</a>
+    </div>
+    <div class="grid stats-grid">
+        <div class="stat-card">
+            <h3>{{ total_categories }}</h3>
+            <p class="muted">Categories</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ total_products }}</h3>
+            <p class="muted">Products</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ total_orders }}</h3>
+            <p class="muted">Orders in database</p>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <h2 class="section-title">Shop by category</h2>
+    <div class="grid category-grid">
+        {% for category in categories %}
+            <a href="{% url 'clothstore:category_products' category.slug %}" class="card">
+                <h3>{{ category.name }}</h3>
+                <p class="muted">{{ category.description|default:'Simple product group for easy learning.' }}</p>
+                <strong>{{ category.product_count }} product{{ category.product_count|pluralize }}</strong>
+            </a>
+        {% empty %}
+            <div class="card">
+                <p>No categories yet. Add some from the admin panel.</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="section">
+    <h2 class="section-title">Featured products</h2>
+    <div class="grid product-grid">
+        {% for product in featured_products %}
+            <div class="card">
+                <span class="badge">{{ product.category.name }}</span>
+                <h3>{{ product.name }}</h3>
+                <p class="muted">{{ product.short_description }}</p>
+                <p class="price">${{ product.price }}</p>
+                <p class="{% if product.is_in_stock %}stock-ok{% else %}muted{% endif %}">
+                    {{ product.stock_label }}
+                </p>
+                <a class="button" href="{{ product.get_absolute_url }}">View Details</a>
+            </div>
+        {% empty %}
+            <div class="card">
+                <p>No featured products found.</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="section">
+    <h2 class="section-title">What you can learn here</h2>
+    <div class="grid learning-grid">
+        <div class="card">
+            <h3>1. Models</h3>
+            <p class="muted">`Category`, `Product`, `Order`, and `OrderItem` show relationships between tables.</p>
+        </div>
+        <div class="card">
+            <h3>2. Views</h3>
+            <p class="muted">Each page has a view function that prepares data and sends it to a template.</p>
+        </div>
+        <div class="card">
+            <h3>3. Templates</h3>
+            <p class="muted">Templates loop through products and categories using Django template tags.</p>
+        </div>
+        <div class="card">
+            <h3>4. Cart + Checkout</h3>
+            <p class="muted">The cart uses Django sessions and checkout uses a simple form without authentication.</p>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <h2 class="section-title">New arrivals</h2>
+    <div class="grid product-grid">
+        {% for product in new_arrivals %}
+            <div class="card">
+                <h3>{{ product.name }}</h3>
+                <p class="muted">Fabric: {{ product.fabric }}</p>
+                <p class="price">${{ product.price }}</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2 class="section-title">Budget-friendly products</h2>
+        <a href="{% url 'clothstore:product_list' %}" class="small-text">See all products</a>
+    </div>
+    <div class="grid product-grid">
+        {% for product in affordable_products %}
+            <div class="card">
+                <h3>{{ product.name }}</h3>
+                <p class="muted">{{ product.short_description }}</p>
+                <p class="price">${{ product.price }}</p>
+                <form action="{% url 'clothstore:cart_add' product.id %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="quantity" value="1">
+                    <input type="hidden" name="next" value="{% url 'clothstore:home' %}">
+                    <button type="submit" class="button">Add to cart</button>
+                </form>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="section">
+    <div class="card">
+        <h2 class="section-title">Learning roadmap</h2>
+        <ul class="feature-list">
+            <li>Start with the product list page to understand routing and filtering.</li>
+            <li>Add products to cart to see how session storage works.</li>
+            <li>Complete checkout to learn how forms create orders and order items.</li>
+            <li>Use the admin panel to edit products, stock, and order status.</li>
+            <li>Use order tracking by email to review saved customer orders without auth.</li>
+        </ul>
+    </div>
+</section>
+{% endblock %}

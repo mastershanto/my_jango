@@ -1,0 +1,55 @@
+{% extends 'clothstore/base.html' %}
+
+{% block title %}ClothStore | Track Orders{% endblock %}
+
+{% block content %}
+<section class="two-column">
+    <div class="card">
+        <h1>Track orders without auth</h1>
+        <p class="muted">For learning only, enter the customer email used at checkout to list matching orders.</p>
+        <form method="post">
+            {% csrf_token %}
+            <label for="id_email">Customer email</label>
+            {{ form.email }}
+            {{ form.email.errors }}
+            <button class="button" type="submit" style="margin-top: 1rem;">Find Orders</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Why this page exists</h2>
+        <ul class="feature-list">
+            <li>Shows form processing with `POST`.</li>
+            <li>Queries orders using `customer_email`.</li>
+            <li>Lets beginners inspect saved checkout data.</li>
+        </ul>
+    </div>
+</section>
+
+{% if orders is not None %}
+    <section class="section">
+        <h2 class="section-title">Matching orders</h2>
+        <div class="grid product-grid">
+            {% for order in orders %}
+                <div class="card">
+                    <span class="badge">{{ order.reference_code }}</span>
+                    <h3>{{ order.customer_name }}</h3>
+                    <p class="muted">{{ order.created_at }}</p>
+                    <p><strong>Status:</strong> {{ order.get_status_display }}</p>
+                    <p><strong>City:</strong> {{ order.city }}</p>
+                    <p class="price">${{ order.total_amount }}</p>
+                    <ul class="order-list">
+                        {% for item in order.items.all %}
+                            <li>{{ item.quantity }} × {{ item.product.name }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% empty %}
+                <div class="card">
+                    <p>No orders were found for this email address.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+{% endif %}
+{% endblock %}

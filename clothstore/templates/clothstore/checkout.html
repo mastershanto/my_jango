@@ -1,0 +1,65 @@
+{% extends 'clothstore/base.html' %}
+
+{% block title %}ClothStore | Checkout{% endblock %}
+
+{% block content %}
+<section class="two-column">
+    <div class="card">
+        <h1>Checkout</h1>
+        <p class="muted">This checkout is intentionally simple for learning. No login, no payment gateway, just form handling and order creation.</p>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            <div class="form-grid">
+                <div>
+                    <label for="id_customer_name">Full name</label>
+                    {{ form.customer_name }}
+                    {{ form.customer_name.errors }}
+                </div>
+                <div>
+                    <label for="id_customer_email">Email</label>
+                    {{ form.customer_email }}
+                    {{ form.customer_email.errors }}
+                </div>
+                <div>
+                    <label for="id_phone">Phone</label>
+                    {{ form.phone }}
+                    {{ form.phone.errors }}
+                </div>
+                <div>
+                    <label for="id_city">City</label>
+                    {{ form.city }}
+                    {{ form.city.errors }}
+                </div>
+                <div class="form-full">
+                    <label for="id_address">Address</label>
+                    {{ form.address }}
+                    {{ form.address.errors }}
+                </div>
+                <div class="form-full">
+                    <label for="id_notes">Delivery notes</label>
+                    {{ form.notes }}
+                    {{ form.notes.errors }}
+                </div>
+            </div>
+            <button type="submit" class="button">Place Order</button>
+        </form>
+    </div>
+
+    <aside class="card summary-card">
+        <h2>Your cart</h2>
+        <ul class="order-list">
+            {% for item in cart_items %}
+                <li>
+                    <strong>{{ item.product.name }}</strong><br>
+                    <span class="small-text">{{ item.quantity }} × ${{ item.product.price }} = ${{ item.line_total }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+        <hr style="margin: 1rem 0; border: 0; border-top: 1px solid #e5e7eb;">
+        <p class="price">Subtotal: ${{ cart_subtotal }}</p>
+        <p class="muted">After checkout, stock is reduced and the cart is cleared.</p>
+    </aside>
+</section>
+{% endblock %}

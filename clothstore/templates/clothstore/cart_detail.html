@@ -1,0 +1,78 @@
+{% extends 'clothstore/base.html' %}
+
+{% block title %}ClothStore | Cart{% endblock %}
+
+{% block content %}
+<section class="two-column">
+    <div class="card">
+        <div class="section-head">
+            <h1 style="margin: 0;">Shopping cart</h1>
+            <a href="{% url 'clothstore:product_list' %}" class="small-text">Continue shopping</a>
+        </div>
+
+        {% if cart_items %}
+            <table class="cart-table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Total</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in cart_items %}
+                        <tr>
+                            <td>
+                                <strong>{{ item.product.name }}</strong><br>
+                                <span class="small-text">{{ item.product.category.name }} · {{ item.product.fabric }}</span>
+                            </td>
+                            <td>${{ item.product.price }}</td>
+                            <td>
+                                <form method="post" action="{% url 'clothstore:cart_update' item.product.id %}" class="qty-form">
+                                    {% csrf_token %}
+                                    <input type="number" name="quantity" min="0" max="{{ item.product.stock }}" value="{{ item.quantity }}">
+                                    <button class="button secondary" type="submit">Update</button>
+                                </form>
+                            </td>
+                            <td>${{ item.line_total }}</td>
+                            <td>
+                                <form method="post" action="{% url 'clothstore:cart_remove' item.product.id %}">
+                                    {% csrf_token %}
+                                    <button class="button danger" type="submit">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="muted">Your cart is empty. Add a few products to start the shopping flow.</p>
+            <a href="{% url 'clothstore:product_list' %}" class="button">Browse products</a>
+        {% endif %}
+    </div>
+
+    <aside class="card summary-card">
+        <h2>Order summary</h2>
+        <div class="summary-row">
+            <div>
+                <strong>Items</strong>
+                <p class="muted">{{ cart_count }} product{{ cart_count|pluralize }} in cart</p>
+            </div>
+            <div>
+                <strong>Subtotal</strong>
+                <p class="price">${{ cart_subtotal }}</p>
+            </div>
+        </div>
+        <ul class="feature-list">
+            <li>No authentication required.</li>
+            <li>Cart data is stored in the session.</li>
+            <li>Checkout creates `Order` and `OrderItem` rows.</li>
+        </ul>
+        {% if cart_items %}
+            <a href="{% url 'clothstore:checkout' %}" class="button">Checkout</a>
+        {% endif %}
+    </aside>
+</section>
+{% endblock %}
