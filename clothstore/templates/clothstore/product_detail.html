@@ -6,10 +6,7 @@
 <section class="product-detail">
     <div class="image-box">
         {% if product.image_url %}
-            <div>
-                <p>Image URL saved for this product</p>
-                <p class="muted">{{ product.image_url }}</p>
-            </div>
+            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-image">
         {% else %}
             <div>
                 <p>{{ product.name }}</p>

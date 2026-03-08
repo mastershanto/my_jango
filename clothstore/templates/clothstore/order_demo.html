@@ -36,8 +36,9 @@
             <h2>Order items</h2>
             <ul class="order-list">
                 {% for item in demo_order.items.all %}
-                    <li>
-                        <strong>{{ item.product.name }}</strong><br>
+                    <li>                         {% if item.product.image_url %}
+                             <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}" class="cart-item-image">
+                         {% endif %}                        <strong>{{ item.product.name }}</strong><br>
                         <span class="muted">{{ item.quantity }} × ${{ item.price_at_purchase }} = ${{ item.line_total }}</span>
                     </li>
                 {% endfor %}

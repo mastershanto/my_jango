@@ -32,6 +32,11 @@
         <div class="grid product-grid">
             {% for order in orders %}
                 <div class="card">
+                    {% with first_item=order.items.all|first %}
+                        {% if first_item.product.image_url %}
+                            <img src="{{ first_item.product.image_url }}" alt="{{ order.customer_name }}" class="product-card-image">
+                        {% endif %}
+                    {% endwith %}
                     <span class="badge">{{ order.reference_code }}</span>
                     <h3>{{ order.customer_name }}</h3>
                     <p class="muted">{{ order.created_at }}</p>

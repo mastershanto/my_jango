@@ -25,6 +25,9 @@
                     {% for item in cart_items %}
                         <tr>
                             <td>
+                                {% if item.product.image_url %}
+                                    <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}" class="cart-item-image">
+                                {% endif %}
                                 <strong>{{ item.product.name }}</strong><br>
                                 <span class="small-text">{{ item.product.category.name }} · {{ item.product.fabric }}</span>
                             </td>
