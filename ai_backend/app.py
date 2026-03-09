@@ -1,15 +1,20 @@
 from __future__ import annotations
 
+import os
+
+# Ensure Django settings are configured before any other imports
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+
+import django
+django.setup()
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from ai_backend.bootstrap import bootstrap_django
 from ai_backend.routers import content_router, recommendation_router
 from services.config import get_ai_settings
-
-bootstrap_django()
 
 
 @asynccontextmanager

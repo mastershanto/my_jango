@@ -2,17 +2,28 @@ from __future__ import annotations
 
 from typing import Any
 
-from ai_backend.bootstrap import bootstrap_django
 
-bootstrap_django()
+def _ensure_django_bootstrapped():
+    """Bootstrap Django if not already done."""
+    try:
+        from django.apps import apps
+        if not apps.ready:
+            from ai_backend.bootstrap import bootstrap_django
+            bootstrap_django()
+    except (ImportError, RuntimeError):
+        pass
 
-from clothstore.models import Product  # noqa: E402
 
+def _get_product_model():
+    """Lazy load the Product model."""
+    _ensure_django_bootstrapped()
+    from clothstore.models import Product
+    return Product
 
 ProductPayload = dict[str, Any]
 
 
-def serialize_product(product: Product) -> ProductPayload:
+def serialize_product(product) -> ProductPayload:
     return {
         "id": product.id,
         "name": product.name,
@@ -28,6 +39,7 @@ def serialize_product(product: Product) -> ProductPayload:
 
 
 def list_available_products(category: str = "") -> list[ProductPayload]:
+    Product = _get_product_model()
     queryset = Product.objects.filter(available=True).select_related("category")
     if category:
         queryset = queryset.filter(category__name__iexact=category)
@@ -35,6 +47,7 @@ def list_available_products(category: str = "") -> list[ProductPayload]:
 
 
 def get_product_by_name(product_name: str) -> ProductPayload | None:
+    Product = _get_product_model()
     product = (
         Product.objects.filter(name__iexact=product_name, available=True)
         .select_related("category")

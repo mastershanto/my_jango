@@ -16,9 +16,16 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.views.defaults import page_not_found, server_error, permission_denied, bad_request
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('clothstore.urls')),
     path('ai/', include('clothstore.api.urls')),
 ]
+
+# Error handlers
+handler400 = bad_request
+handler403 = permission_denied
+handler404 = page_not_found
+handler500 = server_error
