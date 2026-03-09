@@ -1,39 +1,46 @@
-"""
-Django client to call FastAPI AI endpoints.
-Use this in your Django views to integrate AI features.
-"""
+"""Django-side client for the FastAPI AI platform."""
+
+from __future__ import annotations
+
+import logging
+from typing import Any, Optional
 
 import httpx
-import logging
-from typing import Optional
+
+from django.conf import settings
+
+from .config import get_ai_settings
 
 logger = logging.getLogger(__name__)
 
-FASTAPI_BASE_URL = "http://127.0.0.1:8001"
+DEFAULT_BASE_URL = getattr(settings, "AI_SERVICE_BASE_URL", get_ai_settings().django_ai_base_url)
 
 
 class AIServiceClient:
     """Client for calling FastAPI AI services from Django."""
 
-    def __init__(self, base_url: str = FASTAPI_BASE_URL):
+    def __init__(self, base_url: str = DEFAULT_BASE_URL):
         self.base_url = base_url
-        self.client = httpx.Client(timeout=30.0)
+        self.client = httpx.Client(timeout=get_ai_settings().request_timeout)
+
+    def _post(self, path: str, payload: dict[str, Any]) -> Any:
+        response = self.client.post(f"{self.base_url}{path}", json=payload)
+        response.raise_for_status()
+        return response.json()
 
     def generate_description_openai(
         self, product_name: str, category: str, price: float
     ) -> Optional[str]:
         """Call OpenAI endpoint from Django."""
         try:
-            response = self.client.post(
-                f"{self.base_url}/ai/openai/description",
-                json={
+            data = self._post(
+                "/ai/openai/description",
+                {
                     "product_name": product_name,
                     "category": category,
                     "price": price,
                 },
             )
-            response.raise_for_status()
-            data = response.json()
             return data.get("description")
         except Exception as e:
             logger.error(f"OpenAI API call failed: {str(e)}")
@@ -44,16 +51,14 @@ class AIServiceClient:
     ) -> Optional[str]:
         """Call local ML model endpoint from Django."""
         try:
-            response = self.client.post(
-                f"{self.base_url}/ai/local/description",
-                json={
+            data = self._post(
+                "/ai/local/description",
+                {
                     "product_name": product_name,
                     "category": category,
                     "price": price,
                 },
             )
-            response.raise_for_status()
-            data = response.json()
             return data.get("description")
         except Exception as e:
             logger.error(f"Local ML model call failed: {str(e)}")
@@ -64,12 +69,10 @@ class AIServiceClient:
     ) -> Optional[list[str]]:
         """Call OpenAI tags endpoint from Django."""
         try:
-            response = self.client.post(
-                f"{self.base_url}/ai/openai/tags",
-                json={"product_name": product_name, "description": description},
+            data = self._post(
+                "/ai/openai/tags",
+                {"product_name": product_name, "description": description},
             )
-            response.raise_for_status()
-            data = response.json()
             return data.get("tags")
         except Exception as e:
             logger.error(f"OpenAI tags API call failed: {str(e)}")
@@ -78,12 +81,7 @@ class AIServiceClient:
     def generate_tags_local(self, product_name: str) -> Optional[list[str]]:
         """Call local ML model tags endpoint from Django."""
         try:
-            response = self.client.post(
-                f"{self.base_url}/ai/local/tags",
-                json={"product_name": product_name},
-            )
-            response.raise_for_status()
-            data = response.json()
+            data = self._post("/ai/local/tags", {"product_name": product_name})
             return data.get("tags")
         except Exception as e:
             logger.error(f"Local ML tags call failed: {str(e)}")
@@ -95,16 +93,14 @@ class AIServiceClient:
     ) -> Optional[list[dict]]:
         """Get product recommendations using OpenAI."""
         try:
-            response = self.client.post(
-                f"{self.base_url}/ai/openai/recommendations",
-                json={
+            data = self._post(
+                "/ai/openai/recommendations",
+                {
                     "user_preference": user_preference,
                     "category": category,
                     "count": count,
                 },
             )
-            response.raise_for_status()
-            data = response.json()
             return data.get("recommendations")
         except Exception as e:
             logger.error(f"OpenAI recommendations failed: {str(e)}")
@@ -115,16 +111,14 @@ class AIServiceClient:
     ) -> Optional[list[dict]]:
         """Get product recommendations using local ML."""
         try:
-            response = self.client.post(
-                f"{self.base_url}/ai/local/recommendations",
-                json={
+            data = self._post(
+                "/ai/local/recommendations",
+                {
                     "user_preference": user_preference,
                     "category": category,
                     "count": count,
                 },
             )
-            response.raise_for_status()
-            data = response.json()
             return data.get("recommendations")
         except Exception as e:
             logger.error(f"Local ML recommendations failed: {str(e)}")
@@ -135,12 +129,11 @@ class AIServiceClient:
     ) -> Optional[list[str]]:
         """Get similar products using OpenAI."""
         try:
-            response = self.client.post(
-                f"{self.base_url}/ai/openai/similar-products",
-                json={"product_name": product_name, "count": count},
+            data = self._post(
+                "/ai/openai/similar-products",
+                {"product_name": product_name, "count": count},
             )
-            response.raise_for_status()
-            return response.json()
+            return data
         except Exception as e:
             logger.error(f"OpenAI similar products failed: {str(e)}")
             return None
@@ -150,12 +143,10 @@ class AIServiceClient:
     ) -> Optional[list[dict]]:
         """Get similar products using local ML."""
         try:
-            response = self.client.post(
-                f"{self.base_url}/ai/local/similar-products",
-                json={"product_name": product_name, "count": count},
+            data = self._post(
+                "/ai/local/similar-products",
+                {"product_name": product_name, "count": count},
             )
-            response.raise_for_status()
-            data = response.json()
             return data.get("recommendations")
         except Exception as e:
             logger.error(f"Local ML similar products failed: {str(e)}")
@@ -166,12 +157,10 @@ class AIServiceClient:
     ) -> Optional[list[dict]]:
         """Get recommendations based on category."""
         try:
-            response = self.client.post(
-                f"{self.base_url}/ai/local/category-recommendations",
-                json={"category": category, "count": count},
+            data = self._post(
+                "/ai/local/category-recommendations",
+                {"category": category, "count": count},
             )
-            response.raise_for_status()
-            data = response.json()
             return data.get("recommendations")
         except Exception as e:
             logger.error(f"Category recommendations failed: {str(e)}")
@@ -197,13 +186,6 @@ class AIServiceClient:
         self.close()
 
 
-# Singleton instance for convenience
-_client_instance = None
-
-
 def get_ai_client() -> AIServiceClient:
-    """Get or create singleton AI service client."""
-    global _client_instance
-    if _client_instance is None:
-        _client_instance = AIServiceClient()
-    return _client_instance
+    """Return a fresh AI service client."""
+    return AIServiceClient()

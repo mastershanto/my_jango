@@ -12,6 +12,19 @@ echo "✓ Checking Python version..."
 python_version=$(python --version)
 echo "  $python_version"
 
+python_major_minor=$(python - <<'PY'
+import sys
+print(f"{sys.version_info.major}.{sys.version_info.minor}")
+PY
+)
+
+if [[ "$python_major_minor" == "3.14" ]] || [[ "$python_major_minor" > "3.12" ]]; then
+    echo ""
+    echo "⚠️  Python $python_major_minor is newer than the supported AI stack."
+    echo "   Use Python 3.11 or 3.12 for Django + FastAPI + transformers + torch."
+    exit 1
+fi
+
 # Check if .env exists
 if [ ! -f .env ]; then
     echo ""

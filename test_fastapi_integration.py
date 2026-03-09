@@ -134,6 +134,53 @@ def test_openai_tags():
         return False
 
 
+def test_local_recommendations():
+    """Test local recommendation endpoint."""
+    print("\n🧠 Testing Local ML - Recommendations...")
+    try:
+        with get_ai_client() as client:
+            recommendations = client.get_recommendations_local(
+                user_preference="casual summer outfit",
+                category="Tops",
+                count=3,
+            )
+
+            if recommendations:
+                print("✅ Local Recommendations Generated:")
+                print(f"   {recommendations[0]['product_name']}")
+                return True
+            else:
+                print("❌ Failed to generate recommendations")
+                return False
+
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+        return False
+
+
+def test_local_similar_products():
+    """Test local similar products endpoint."""
+    print("\n🔁 Testing Local ML - Similar Products...")
+    try:
+        with get_ai_client() as client:
+            recommendations = client.get_similar_products_local(
+                product_name="Blue Denim Jacket",
+                count=2,
+            )
+
+            if recommendations:
+                print("✅ Local Similar Products Generated:")
+                print(f"   {recommendations[0]['product_name']}")
+                return True
+            else:
+                print("❌ Failed to generate similar products")
+                return False
+
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+        return False
+
+
 def main():
     """Run all tests."""
     print("=" * 60)
@@ -161,6 +208,12 @@ def main():
     time.sleep(1)
 
     results["OpenAI Tags"] = test_openai_tags()
+    time.sleep(1)
+
+    results["Local Recommendations"] = test_local_recommendations()
+    time.sleep(1)
+
+    results["Local Similar Products"] = test_local_similar_products()
 
     # Summary
     print("\n" + "=" * 60)

@@ -1,142 +1,107 @@
-"""
-OpenAI Product Recommendation Service
-Uses OpenAI to generate personalized product recommendations based on user preferences.
-"""
+"""OpenAI-backed recommendation services."""
 
-import os
-from openai import OpenAI
+from __future__ import annotations
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+from .openai_service import get_openai_client
+from .config import get_ai_settings
+from .product_catalog import list_available_products
 
 
-async def get_product_recommendations_openai(
+def get_product_recommendations_openai(
     user_preference: str, category: str = "", count: int = 5
 ) -> list[dict]:
-    """
-    Get product recommendations using OpenAI based on user preferences.
-    
-    Args:
-        user_preference: Description of what user is looking for (e.g., "casual summer outfit")
-        category: Optional category filter (e.g., "Tops", "Bottoms")
-        count: Number of recommendations to return (default: 5)
-    
-    Returns:
-        List of product recommendations with name, category, and reasoning
-    """
-    try:
-        category_context = f" in the {category} category" if category else ""
-        
-        prompt = f"""You are a fashion expert for an online clothing store.
-Based on the user's preference, recommend {count} specific clothing products{category_context}.
+    """Get product recommendations grounded in the live product catalog."""
+    settings = get_ai_settings()
+    catalog_rows = list_available_products(category)
+    catalog_text = "\n".join(
+        f"- {row['name']} | {row['category']} | ${row['price']} | {row['short_description']}"
+        for row in catalog_rows[:50]
+    )
+    prompt = f"""You are a fashion recommendation expert.
 
-User's Preference: {user_preference}
+User preference: {user_preference}
+Requested category: {category or 'any'}
+Available products:
+{catalog_text}
 
-For each recommendation, provide:
-1. Product name (be specific, like "Blue Denim Jacket" not just "Jacket")
-2. Category (e.g., Tops, Bottoms, Outerwear, Accessories)
-3. Brief reasoning (1-2 sentences why it matches their preference)
+Pick the best {count} products from the available products only.
+Return one recommendation per line in this exact format:
+[Product Name] | [Category] | [Reasoning]"""
 
-Format each recommendation as:
-- [Product Name] | [Category] | [Reasoning]
-
-Provide exactly {count} recommendations, one per line."""
-
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a helpful fashion assistant for an online clothing store. Provide specific product recommendations.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=500,
-            temperature=0.7,
-        )
-
-        recommendations_text = response.choices[0].message.content.strip()
-        recommendations = _parse_recommendations(recommendations_text)
-
-        return recommendations
-
-    except Exception as e:
-        raise Exception(f"OpenAI recommendation error: {str(e)}")
+    response = get_openai_client().chat.completions.create(
+        model=settings.openai_model,
+        messages=[
+            {
+                "role": "system",
+                "content": "Only recommend from the provided catalog.",
+            },
+            {"role": "user", "content": prompt},
+        ],
+        max_tokens=500,
+        temperature=0.4,
+    )
+    recommendations_text = response.choices[0].message.content or ""
+    return _parse_recommendations(recommendations_text.strip())
 
 
-async def get_recommendation_reasoning_openai(
+def get_recommendation_reasoning_openai(
     product_name: str, user_preference: str
 ) -> str:
-    """
-    Get detailed reasoning why a product is recommended for a user.
-    """
-    try:
-        prompt = f"""Explain in 2-3 sentences why the "{product_name}" is a perfect match for someone 
-looking for: {user_preference}
-
-Focus on style, comfort, and practical benefits."""
-
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a fashion expert providing personalized recommendations.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=150,
-            temperature=0.7,
-        )
-
-        return response.choices[0].message.content.strip()
-
-    except Exception as e:
-        raise Exception(f"OpenAI reasoning error: {str(e)}")
+    """Get detailed recommendation reasoning."""
+    settings = get_ai_settings()
+    prompt = f"""Explain in 2-3 sentences why {product_name} matches this preference: {user_preference}."""
+    response = get_openai_client().chat.completions.create(
+        model=settings.openai_model,
+        messages=[
+            {"role": "system", "content": "You are a fashion recommendation expert."},
+            {"role": "user", "content": prompt},
+        ],
+        max_tokens=120,
+        temperature=0.5,
+    )
+    content = response.choices[0].message.content or ""
+    return content.strip()
 
 
-async def get_similar_products_openai(product_name: str, count: int = 3) -> list[str]:
-    """
-    Get similar product recommendations based on a product name.
-    """
-    try:
-        prompt = f"""Recommend {count} similar clothing products to "{product_name}".
-Return only product names, one per line, without numbering or explanations."""
+def get_similar_products_openai(product_name: str, count: int = 3) -> list[str]:
+    """Get similar products from the live product catalog."""
+    settings = get_ai_settings()
+    catalog_text = "\n".join(
+        f"- {row['name']} | {row['category']} | {row['short_description']}"
+        for row in list_available_products()[:50]
+    )
+    prompt = f"""Using the catalog below, return {count} products similar to {product_name}.
 
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a fashion expert for an online clothing store.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=150,
-            temperature=0.6,
-        )
+Catalog:
+{catalog_text}
 
-        products_text = response.choices[0].message.content.strip()
-        products = [p.strip() for p in products_text.split("\n") if p.strip()]
-
-        return products[:count]
-
-    except Exception as e:
-        raise Exception(f"OpenAI similar products error: {str(e)}")
+Return only product names, one per line."""
+    response = get_openai_client().chat.completions.create(
+        model=settings.openai_model,
+        messages=[
+            {"role": "system", "content": "Only return names from the catalog."},
+            {"role": "user", "content": prompt},
+        ],
+        max_tokens=120,
+        temperature=0.3,
+    )
+    content = response.choices[0].message.content or ""
+    return [line.strip("- ").strip() for line in content.split("\n") if line.strip()][:count]
 
 
 def _parse_recommendations(text: str) -> list[dict]:
     """Parse recommendation text into structured format."""
     recommendations = []
-    
+
     for line in text.split("\n"):
         line = line.strip()
         if not line or line.startswith("```"):
             continue
-            
+
         # Remove leading bullet points or numbers
         if line.startswith(("- ", "* ", "+ ")):
             line = line[2:]
-        
+
         # Parse format: [Product] | [Category] | [Reasoning]
         if "|" in line:
             parts = [p.strip() for p in line.split("|")]
@@ -144,12 +109,12 @@ def _parse_recommendations(text: str) -> list[dict]:
                 product_name = parts[0].replace("[", "").replace("]", "").strip()
                 category = parts[1].replace("[", "").replace("]", "").strip()
                 reasoning = parts[2].replace("[", "").replace("]", "").strip()
-                
+
                 if product_name and category:
                     recommendations.append({
                         "product_name": product_name,
                         "category": category,
                         "reasoning": reasoning,
                     })
-    
+
     return recommendations

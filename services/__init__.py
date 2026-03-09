@@ -2,6 +2,7 @@
 AI Services package for integrating OpenAI and local ML models.
 """
 
+from .config import AISettings, get_ai_settings
 from .django_client import AIServiceClient, get_ai_client
 from .ml_service import generate_product_description_local, generate_product_tags_local
 from .openai_service import (
@@ -22,7 +23,9 @@ from .recommendation_service import (
 
 __all__ = [
     "AIServiceClient",
+    "AISettings",
     "get_ai_client",
+    "get_ai_settings",
     "generate_product_description_openai",
     "generate_product_tags_openai",
     "generate_product_description_local",

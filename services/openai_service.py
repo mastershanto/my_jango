@@ -1,14 +1,29 @@
-import os
+from __future__ import annotations
+
+from functools import lru_cache
+
 from openai import OpenAI
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+from .config import get_ai_settings
 
 
-async def generate_product_description_openai(product_name: str, category: str, price: float) -> str:
-    """Generate product description using OpenAI GPT model."""
-    try:
-        prompt = f"""Generate a compelling and concise product description for an online clothing store.
-        
+@lru_cache(maxsize=1)
+def get_openai_client() -> OpenAI:
+    settings = get_ai_settings()
+    if not settings.openai_api_key:
+        raise ValueError("OpenAI API key is not configured.")
+    return OpenAI(api_key=settings.openai_api_key)
+
+
+def generate_product_description_openai(
+    product_name: str,
+    category: str,
+    price: float,
+) -> str:
+    """Generate product description using OpenAI."""
+    settings = get_ai_settings()
+    prompt = f"""Generate a compelling and concise product description for an online clothing store.
+
 Product Name: {product_name}
 Category: {category}
 Price: ${price}
@@ -16,53 +31,46 @@ Price: ${price}
 Write a description that is:
 - Engaging and persuasive
 - 2-3 sentences maximum
-- Focuses on style, comfort, and quality
-- Suitable for e-commerce listings"""
+- Focused on style, comfort, and quality
+- Suitable for an e-commerce listing"""
 
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a professional copywriter for a clothing e-commerce store.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=150,
-            temperature=0.7,
-        )
-
-        return response.choices[0].message.content.strip()
-
-    except Exception as e:
-        raise Exception(f"OpenAI API error: {str(e)}")
+    response = get_openai_client().chat.completions.create(
+        model=settings.openai_model,
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a senior e-commerce copywriter for a fashion brand.",
+            },
+            {"role": "user", "content": prompt},
+        ],
+        max_tokens=180,
+        temperature=0.7,
+    )
+    content = response.choices[0].message.content or ""
+    return content.strip()
 
 
-async def generate_product_tags_openai(product_name: str, description: str) -> list[str]:
-    """Generate SEO tags for product using OpenAI."""
-    try:
-        prompt = f"""Generate 5-7 relevant SEO tags for this clothing product.
-        
+def generate_product_tags_openai(product_name: str, description: str) -> list[str]:
+    """Generate SEO tags for a product using OpenAI."""
+    settings = get_ai_settings()
+    prompt = f"""Generate 5-7 concise SEO tags for this clothing product.
+
 Product Name: {product_name}
 Description: {description}
 
-Return only the tags as a comma-separated list, no other text."""
+Return only a comma-separated list."""
 
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are an SEO expert for an e-commerce clothing store.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=100,
-            temperature=0.5,
-        )
-
-        tags_str = response.choices[0].message.content.strip()
-        return [tag.strip() for tag in tags_str.split(",")]
-
-    except Exception as e:
-        raise Exception(f"OpenAI API error: {str(e)}")
+    response = get_openai_client().chat.completions.create(
+        model=settings.openai_model,
+        messages=[
+            {
+                "role": "system",
+                "content": "You are an SEO specialist for a fashion storefront.",
+            },
+            {"role": "user", "content": prompt},
+        ],
+        max_tokens=100,
+        temperature=0.4,
+    )
+    content = response.choices[0].message.content or ""
+    return [tag.strip() for tag in content.split(",") if tag.strip()]

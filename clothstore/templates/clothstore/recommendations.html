@@ -1,0 +1,101 @@
+{% extends "clothstore/base.html" %}
+
+{% block title %}AI Recommendations{% endblock %}
+
+{% block content %}
+<section class="section">
+	<div class="container">
+		<div class="hero">
+			<div class="hero-card">
+				<span class="badge">AI assistant</span>
+				<h1>Find products with natural language</h1>
+				<p>Use a production-style recommendation workflow powered by the local model or OpenAI.</p>
+				<a class="button secondary" href="{% url 'clothstore:product_list' %}">Browse catalog</a>
+			</div>
+			<div class="card">
+				<h2 class="section-title">Recommendation query</h2>
+				<form id="recommendation-form" class="grid">
+					<div>
+						<label for="preference">What are you looking for?</label>
+						<input id="preference" name="preference" placeholder="e.g. casual summer outfit" required>
+					</div>
+					<div>
+						<label for="category">Category</label>
+						<select id="category" name="category">
+							<option value="">All</option>
+							{% for category in categories %}
+							<option value="{{ category }}">{{ category }}</option>
+							{% endfor %}
+						</select>
+					</div>
+					<div>
+						<label for="count">Count</label>
+						<input id="count" name="count" type="number" min="1" max="12" value="5">
+					</div>
+					<div>
+						<label for="provider">Provider</label>
+						<select id="provider" name="provider">
+							<option value="local">Local model</option>
+							<option value="openai">OpenAI</option>
+						</select>
+					</div>
+					<div>
+						<button class="button" type="submit">Get recommendations</button>
+					</div>
+				</form>
+				<p id="recommendation-feedback" class="muted"></p>
+			</div>
+		</div>
+
+		<section class="section">
+			<div class="section-head">
+				<h2 class="section-title">Recommendation results</h2>
+			</div>
+			<div id="recommendation-results" class="grid product-grid"></div>
+		</section>
+	</div>
+</section>
+
+<script>
+const form = document.getElementById("recommendation-form");
+const feedback = document.getElementById("recommendation-feedback");
+const results = document.getElementById("recommendation-results");
+
+form.addEventListener("submit", async (event) => {
+	event.preventDefault();
+	feedback.textContent = "Loading recommendations...";
+	results.innerHTML = "";
+
+	const payload = {
+		user_preference: document.getElementById("preference").value,
+		category: document.getElementById("category").value,
+		count: Number(document.getElementById("count").value),
+		use_openai: document.getElementById("provider").value === "openai",
+	};
+
+	const response = await fetch("{% url 'clothstore_ai:get_recommendations' %}", {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			"X-CSRFToken": "{{ csrf_token }}",
+		},
+		body: JSON.stringify(payload),
+	});
+	const data = await response.json();
+
+	if (!response.ok) {
+		feedback.textContent = data.error || "Request failed.";
+		return;
+	}
+
+	feedback.textContent = `Loaded ${data.count} recommendations from ${data.provider}.`;
+	results.innerHTML = data.recommendations.map((item) => `
+		<article class="card">
+			<span class="badge">${item.category}</span>
+			<h2>${item.product_name}</h2>
+			<p class="muted">${item.reasoning || "Recommended for your query."}</p>
+		</article>
+	`).join("");
+});
+</script>
+{% endblock %}
